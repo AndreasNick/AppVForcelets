@@ -12,11 +12,12 @@
 #      a configuration file. Provided, of course, that the file is found
 #
 #      .NOTES
-#      Andreas Nick, 2019/2020
+#      Andreas Nick, 2019/2020 Twitter: @Nickinformation
+#      Use is subject to the terms of the MIT license. Use at your own risk.
 #
 #      .LINK
 #      https://www.software-virtualisierung.de
-# 
+#      
 
 
 @{
@@ -37,7 +38,7 @@ Author = 'Andreas Nick'
 CompanyName = 'Nick Informationstechnik GmbH'
 
 # Copyright
-Copyright = '(c) 2020 Andreas. All rights reserved.'
+Copyright = '(c) 2020 Andreas. All rights reserved'
 
 # Module Description
 Description = 'AppVForcelets'
