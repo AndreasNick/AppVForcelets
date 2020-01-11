@@ -20,6 +20,7 @@
 #      
 
 
+
 @{
 
 # Module Loader File
@@ -30,6 +31,8 @@ ModuleVersion = '1.0'
 
 # Unique Module ID
 GUID = '39c9e5f1-3fb9-4394-8ae3-156d6709b79f'
+
+CompatiblePSEditions = @("Desktop")
 
 # Module Author
 Author = 'Andreas Nick'
@@ -98,6 +101,24 @@ ModuleList = @()
 FileList = @()
 
 # Private data that needs to be passed to this module
-PrivateData = ''
+PrivateData = @{
+    PSData = @{
+       
+        # Tags = @('App-V','AppV','DeploymentConfig','AppXManifest')
 
+        # A URL to the license for this module.
+        # LicenseUri = 'MIT'
+
+        # A URL to the main website for this project.
+        # ProjectUri = 'http://www.andreasnick.com'
+
+        # A URL to an icon representing this module.
+        # IconUri = ''
+
+        # ReleaseNotes of this module
+        # ReleaseNotes = ''
+
+    } # End of PSData hashtable
+
+} # End of PrivateData hashtable
 }
