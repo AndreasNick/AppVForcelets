@@ -1,5 +1,6 @@
 # AppVForcelets
 Additional PowerShell Commands for Microsoft App-V (currently primarily for package analysis)
+Use is subject to the terms of the MIT license. Use at your own risk.
 
 ##what's the point?
 The module currently has some primary functions to make information from the internal AppXManifest (and the external configuration files) of an .appv file visible and searchable. This includes the possibility to search an App-V package directory for specific data. For example: Find all packages with ShellExtensions
@@ -28,3 +29,4 @@ AdobeDigitEd2                           False       False
 Adobe_PS_CS4                            False        True
 Acrobat_Pro_2015                         True        True
 ````
+
