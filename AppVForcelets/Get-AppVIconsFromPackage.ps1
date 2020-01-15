@@ -91,8 +91,12 @@ Parameter description
   [Alias()]
   [OutputType('AppVIconObject')]
   param( 
-    [Parameter( Position = 0, Mandatory = $true, ValueFromPipeline = $true)] [System.IO.FileInfo] $Path,
-    [Parameter( Position = 1, Mandatory = $true, ValueFromPipeline = $true)] [PSCustomObject[]] $Iconlist, #from the Shortcut Info
+   
+    [Parameter( Position = 0, Mandatory = $true, ValueFromPipelineByPropertyName=$True)] 
+    [Alias('ConfigPath')] [System.IO.FileInfo] $Path,
+   
+    [Parameter( Position = 1, Mandatory = $true, ValueFromPipelineByPropertyName=$True)] [Alias('Shortcuts')]
+    [PSCustomObject[]]  $Iconlist, #from the Shortcut Info
     [ValidateSet('Bmp', 'Emf', 'Gif',  'Jpeg', 'Png', 'Tiff', 'Wmf')][string] $ImageType = "Png"
   )
 
@@ -133,17 +137,21 @@ Parameter description
             #sorry, we need a file fpr this
             $bytes | Set-Content -Encoding byte  -Path "$env:temp\tempicofile.ico" -Force
             #
-            write-verbose $("Convert it to a Bmp") -Verbose
+            write-verbose $("Convert it to a Base64 encoded image") 
             #
             $bmp=$null
             
             [System.Drawing.Image] $bmp = ([System.Drawing.Icon]::ExtractAssociatedIcon("$env:temp\tempicofile.ico")).ToBitmap() #round about 5K
 
             $ms = new-object System.IO.MemoryStream
-            $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::$ImageType)
+          
+            #$imageType = [System.Drawing.Imaging.ImageFormat]::Icon
+
+            $bmp.save($ms, [System.Drawing.Imaging.ImageFormat]::$ImageType)
+
             $iconBase64 = [Convert]::ToBase64String($ms.GetBuffer())
             $ms.close()
-            $appvfile.Close()
+            $appvfile.Dispose()
           }
             
           $AppvIconInfo = "" | Select-Object -Property  Target, Base64Image, ImageType, Icon, File, Arguments

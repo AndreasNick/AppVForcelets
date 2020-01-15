@@ -148,6 +148,7 @@ Add-Type -AssemblyName System.Drawing
 
 $Script:AppvDeploymentInfo = 
 @("Name",
+  "ConfigPath",
   "ComMode",
   "InProcessEnabled",
   "OutOfProcessEnabled",
@@ -192,7 +193,7 @@ foreach ($item in $AppvDeploymentInfo) {
 }
 
 #Typedef for the Manifest Infos
-$AppxManifestInfo = "Name, Discription, AppVSchemaVersion, OSMinVersion, OSMaxVersionTested, TargetOSes, MaxfileSize, MaxfilePath,FileCount,
+$AppxManifestInfo = "Name, Discription, ConfigPath, AppVSchemaVersion, OSMinVersion, OSMaxVersionTested, TargetOSes, MaxfileSize, MaxfilePath,FileCount,
 HasShortcuts, Shortcuts, HasFileTypeAssociation, FileTypeAssociation, UncompressedSize,  
 ComMode,InProcessEnabled, OutOfProcessEnabled, FullVFSWriteMode, HasApplicationCapabilities, ApplicationCapabilities,
 AppVInProcExt, AssetIntelligence, HasFonts, HasSxSAssemblys, SxSAssemblys, HasComComponents, HasApplications, Applications,
@@ -215,7 +216,7 @@ foreach ($item in $AppxManifestInfo) {
 }
 
 #Typedef for the UserConfig.xml
-$UserConfigInfo = @("Name, ComMode,InProcessEnabled, OutOfProcessEnabled, HasRegistrySettings, HasURLProtocols,
+$UserConfigInfo = @("Name, ConfigPath,ComMode,InProcessEnabled, OutOfProcessEnabled, HasRegistrySettings, HasURLProtocols,
 FontsEnabled, FileSystemEnabled, ServicesEnabled, HasFileTypeAssociation, FileTypeAssociation, FileTypeAssociationEnabled,
 EnvironmentVariablesEnabled, HasEnvironmentVariables, ObjectsEnabled,  RegistryEnabled,
 HasApplications, Applications, HasShortcuts, Shortcuts, ShortcutsEnabled, HasUserScripts, 

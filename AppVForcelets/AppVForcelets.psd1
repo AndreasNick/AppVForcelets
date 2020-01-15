@@ -27,7 +27,7 @@
 RootModule = 'loader.psm1'
 
 # Version Number
-ModuleVersion = '1.0'
+ModuleVersion = '1.2'
 
 # Unique Module ID
 GUID = '39c9e5f1-3fb9-4394-8ae3-156d6709b79f'
@@ -102,13 +102,13 @@ FileList = @()
 PrivateData = @{
     PSData = @{
        
-        # Tags = @('App-V','AppV','DeploymentConfig','AppXManifest')
+        Tags = @('App-V','AppV','DeploymentConfig','AppXManifest')
 
         # A URL to the license for this module.
-        # LicenseUri = 'MIT'
+        LicenseUri = 'https://raw.githubusercontent.com/AndreasNick/AppVForcelets/master/LICENSE'
 
         # A URL to the main website for this project.
-        # ProjectUri = 'http://www.andreasnick.com'
+        ProjectUri = 'http://www.andreasnick.com'
 
         # A URL to an icon representing this module.
         # IconUri = ''
@@ -120,11 +120,13 @@ PrivateData = @{
 
 } # End of PrivateData hashtable
 }
+
+
 # SIG # Begin signature block
 # MIIetQYJKoZIhvcNAQcCoIIepjCCHqICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU0RoTa+bAIAiyrNdykWPvm1Yo
-# 1PWgghm/MIIEhDCCA2ygAwIBAgIQQhrylAmEGR9SCkvGJCanSzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUqWD+SoIudZJ6WtGeAJCPBKeu
+# 1/mgghm/MIIEhDCCA2ygAwIBAgIQQhrylAmEGR9SCkvGJCanSzANBgkqhkiG9w0B
 # AQUFADBvMQswCQYDVQQGEwJTRTEUMBIGA1UEChMLQWRkVHJ1c3QgQUIxJjAkBgNV
 # BAsTHUFkZFRydXN0IEV4dGVybmFsIFRUUCBOZXR3b3JrMSIwIAYDVQQDExlBZGRU
 # cnVzdCBFeHRlcm5hbCBDQSBSb290MB4XDTA1MDYwNzA4MDkxMFoXDTIwMDUzMDEw
@@ -267,22 +269,22 @@ PrivateData = @{
 # U0EgQ29kZSBTaWduaW5nIENBAhEAjaZk0i7s1Jgixb2rI0fOxzAJBgUrDgMCGgUA
 # oHgwGAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYB
 # BAGCNwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0B
-# CQQxFgQUX9Jf/5Ah617rU4LgTZPCrAlTUnQwDQYJKoZIhvcNAQEBBQAEggEARvfj
-# R4iDNA82HwV5BecIWGc69BDUNW3+Mvx4sTrmTT5lDDGiDFICEm970rMcnzgCTTHI
-# exyZQ58Gu/f44fcyMROSwl5CZtzkYbvYgBYlOnvFeI4gZIgqz+4hifIm9lIMiQnN
-# Zml+TJ6iFZnYYEuVOws2M2moYpu8alDK7YNJEIU1qdo5BwNbFMA2VZI8A/y+COCM
-# U0b+6bC8r08Y1AOxUZFS5zQ8T3Z9KyviQuCcYTYPBO3JwRgpowjoHYOxqRlGiMLT
-# 8bN1m/5BDdggrPm8wvqr4V2oGU7LmEKSr5ds/oHNHRBmmbmdTbPgltos39Jo55/d
-# nWvndwRgvA3W6UDvEaGCAigwggIkBgkqhkiG9w0BCQYxggIVMIICEQIBATCBjjB6
+# CQQxFgQUONXIVfXHCqL91wS68ahOIAIyQH0wDQYJKoZIhvcNAQEBBQAEggEAHel8
+# JcnYXrmvylOS6JVWUVQUoIIags9G16/2bTt4QrohTMQ1aW3lBssEqc5S+Nji2cSn
+# 6DU3sLiqwDLSuX3YJVhklhVwraSHc40X6InIumpAITCXP1qCq52/uOHG2e+Fx9cT
+# d8wMSfo/zMAOgZ6U2B2zU3WifevpIRfudW2q5zLxGJE7cYwM4+honQ/y05urSfMm
+# q8eEmdCR3bxY1oHlY/gIsKS3mS8pj7aOWY9dKBQc89mHEAdNjn/rHJQGeCbNuy6x
+# j4DJmKqwOKt5WASamTNYVFFIxRQT8gmw5XgRhumKoVT5ZkYN63udcYaVG6YhV8cs
+# ROYCrQW5xOkbSjZxs6GCAigwggIkBgkqhkiG9w0BCQYxggIVMIICEQIBATCBjjB6
 # MQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYD
 # VQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDEgMB4GA1UE
 # AxMXQ09NT0RPIFRpbWUgU3RhbXBpbmcgQ0ECECtz23RjEUxaWzJK8jBXckkwCQYF
 # Kw4DAhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkF
-# MQ8XDTIwMDExMTE2MTEyNVowIwYJKoZIhvcNAQkEMRYEFPo2VGCN5QLgTrrO6nGk
-# Sx6I/VTCMA0GCSqGSIb3DQEBAQUABIIBAEC+nYIF2zuYVdNkSZY1eimRHygbu+tu
-# VIlunWDRHUPIm2G2wuCeempX6/yHagsXjOjIt0Na8LY/sAPYTpSD/7aUh96zMf56
-# UaPy4o7l7ipk8CxmYgBfobNG26d4cIJHAYt7ywJfbbtNMazJhR2rWBVOzjxw1Ktn
-# T4Y9VrpWekY0aKCV7egITP1OCksytTP3Iv1yYfdqLiXFe6MhyETuQz6RwH6V7ls1
-# YuS3G/b0UA6uZSA2Vpu5szDlyyBt67U5PvlzDTGAaxek1WViAvhWCXhlKNv3iWg3
-# pGwfH6t4l3XBCIFoqRMwf7bLByyBgD8+v1TpyrJbAz/HSfHTgWjPeoM=
+# MQ8XDTIwMDExMTE4NDU1MVowIwYJKoZIhvcNAQkEMRYEFDSL8aJB26TBXJXCHf8P
+# qV2QgFbCMA0GCSqGSIb3DQEBAQUABIIBAIqwkzYO++o9iZs+L9Rn8LrePiShyvYw
+# fX4IVPohJzkc4+kf3IkcbIRC2yHIJri2pDSq2VtS9VWMfF6EUYO9xKucurs4F5um
+# bL/DKF2eNXMmL2MkPfd4ds9WUhMj3mACjao30BiGV+wqgumIYXXmAs41vm6Nv8ae
+# SX06/HJnuMIWlIIJTBmlJlpVeRWh1AEXs7zVsh/AvRHoM5vtS7BGI9iVfrchKF3b
+# teLgSvlR820NnPmMLn+CVZFfbXzE83kMeN23CCL8q0oa9ZTxBRyKGwQaXziFh9Cr
+# F+hPTUmQ7iWMRT3n8NNgRvnQnf2kBJ5GePk63HuZiucwik16K1WskqY=
 # SIG # End signature block

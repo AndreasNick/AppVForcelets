@@ -62,12 +62,20 @@
       
           [system.IO.StreamReader]$z = $appxmanifest.Open()
           $appxxml = $z.ReadToEnd()
-          $null=$z.Close()
-      
+          $z = $null
+          #$null=$z.Close()
+          
+          #$z.Dispose()
+
           [System.IO.Compression.ZipArchiveEntry] $appxmanifest = $arc.GetEntry("StreamMap.xml")
           [system.IO.StreamReader] $z = $appxmanifest.Open()
           $appvStreamMapp = $z.ReadToEnd()
-          $null=$z.Close()
+          $z = $null
+          #$null=$z.Close()
+          #$z.Dispose()
+          $arc.Dispose()
+      
+          
         }
         else {
           Write-Verbose "AppV file not found" 
@@ -94,7 +102,7 @@
       
       #Create Object
       #AppVInProcExt attribute in Office! #BrowserPlugInsEnabled, Microsoft create a command for disabled PlugIns :-(
-      $InfoObj = @("Name, Discription, AppVSchemaVersion, OSMinVersion, OSMaxVersionTested, TargetOSes, MaxfileSize, MaxfilePath, FileCount,
+      $InfoObj = @("Name, Discription, ConfigPath, AppVSchemaVersion, OSMinVersion, OSMaxVersionTested, TargetOSes, MaxfileSize, MaxfilePath, FileCount,
       HasShortcuts, Shortcuts, HasFileTypeAssociation, FileTypeAssociation, UncompressedSize,
       ComMode,InProcessEnabled, OutOfProcessEnabled, FullVFSWriteMode, HasApplicationCapabilities, ApplicationCapabilities,
       AppVInProcExt, AssetIntelligence, HasFonts, HasSxSAssemblys, SxSAssemblys, HasComComponents, HasApplications, Applications,
@@ -111,6 +119,8 @@
       $AppxInfo.MaxfileSize = $maxfileSize
       $AppxInfo.UncompressedSize = $UncompressedSize
       $AppxInfo.FileCount = $fileCount 
+
+      $AppxInfo.ConfigPath =  $Path
 
       #Test for Schema
       $Namespaces = @($appxxml.SelectNodes('//namespace::*[not(. = ../../namespace::*)]'))
@@ -176,23 +186,26 @@
        }
 
 
-      #FileTypeAssosinations
-      $AppxInfo.HasFileTypeAssociation = ([string]($appxxml.Package.Extensions.Extension.FileTypeAssociation)).trim().Length -gt 0
-      $AppxInfo.FileTypeAssociation = New-Object System.Collections.ArrayList
+    #FileTypeAssosinations
+    $AppxInfo.HasFileTypeAssociation = ([string]($appxxml.Package.Extensions.Extension.FileTypeAssociation)).trim().Length -gt 0
+    $AppxInfo.FileTypeAssociation = New-Object System.Collections.ArrayList
 
-      if( $AppxInfo.HasFileTypeAssociation){ #Array!
-        $AppxInfo.HasFileTypeAssociation = $true
-        foreach($sub in @($appxxml.Package.Extensions.ChildNodes)){
-          if($sub.Category -eq "AppV.FileTypeAssociation"){
-        
+    if ( $AppxInfo.HasFileTypeAssociation) {
+      #Array!
+      $AppxInfo.HasFileTypeAssociation = $true
+      foreach ($sub in @($appxxml.Package.Extensions.ChildNodes)) {
+        if ($sub.Category -eq "AppV.FileTypeAssociation") {
+          if ($null -ne $sub.FileTypeAssociation.FileExtension.Name) {
             $sk = "" | Select-Object -Property Name, ProcID
             $sk.Name = $sub.FileTypeAssociation.FileExtension.Name
             $sk.ProcID = $sub.FileTypeAssociation.FileExtension.ProgId
+          
       
             $null = $AppxInfo.FileTypeAssociation.add($sk) 
           }
         }
       }
+    }
 
       #Services
       $AppxInfo.HasServices = ([string]($appxxml.Package.Extensions.Extension.Service)).trim().Length -gt 0
@@ -295,8 +308,6 @@
       } else {
         $AppxInfo.HasSxSAssemblys= $false
       }
- 
- 
 
       #ApplicationCapabilities with CapabilitiesWow64 hive
       $AppxInfo.ApplicationCapabilities = new-Object System.Collections.ArrayList
@@ -307,7 +318,6 @@
    
       #Test for ApplicationCapabilities  - or CapabilitiesWow64
       if($null -ne $capBase){
-   
         $AppxInfo.HasApplicationCapabilities = $true
         foreach($item in $capBase.FileAssociation){
           $sk = "" | Select-Object -Property Name, ProcID

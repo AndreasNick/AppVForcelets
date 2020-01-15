@@ -74,7 +74,7 @@
       #Create Object
       #AppVInProcExt attribute in Office!
   
-      $AppxInfo = "" | Select-Object -Property Name, ComMode,InProcessEnabled, OutOfProcessEnabled, HasRegistrySettings, HasURLProtocols,
+      $AppxInfo = "" | Select-Object -Property Name, ConfigPath, ComMode,InProcessEnabled, OutOfProcessEnabled, HasRegistrySettings, HasURLProtocols,
       FontsEnabled, FileSystemEnabled, ServicesEnabled, HasFileTypeAssociation, FileTypeAssociation, FileTypeAssociationEnabled,
       EnvironmentVariablesEnabled, HasEnvironmentVariables, ObjectsEnabled,  RegistryEnabled,
       HasApplications, Applications, HasShortcuts, Shortcuts, ShortcutsEnabled, HasUserScripts, UserScripts
@@ -94,7 +94,7 @@
       #DisplayName
       $DisplayName = ($Base.SelectNodes($ConfString,$ns)).DisplayName
       $AppxInfo.Name = $DisplayName
-  
+      $AppxInfo.ConfigPath = $path
       $AppxInfo = Get-AppVConfigUserPart -AppxInfo $AppxInfo -Appxxml $appxxml -ConfigFileType UserConfiguration
   
       return $AppxInfo

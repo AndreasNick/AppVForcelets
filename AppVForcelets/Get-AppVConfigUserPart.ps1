@@ -48,16 +48,19 @@
     
       }
   
-      #FileTypeAssociation
-      $fta = $Base.SelectNodes($ConfString+'ns:Subsystems/ns:FileTypeAssociations/ns:Extensions',$ns)
-      $AppxInfo.HasFileTypeAssociation = $false
-      $AppxInfo.FileTypeAssociation = New-Object System.Collections.ArrayList
-      if($fta.Count -gt 0){
+    #FileTypeAssociation
+    $fta = $Base.SelectNodes($ConfString + 'ns:Subsystems/ns:FileTypeAssociations/ns:Extensions', $ns)
+    $AppxInfo.HasFileTypeAssociation = $false
+    $AppxInfo.FileTypeAssociation = New-Object System.Collections.ArrayList
+    if ($fta.Count -gt 0) {
 
-        $AppxInfo.HasFileTypeAssociation= $true
-        $AppxInfo.FileTypeAssociationEnabled = "true" -eq $Base.SelectNodes($ConfString+'ns:Subsystems/ns:FileTypeAssociations',$ns).Enabled
+      $AppxInfo.HasFileTypeAssociation = $true
+      $AppxInfo.FileTypeAssociationEnabled = "true" -eq $Base.SelectNodes($ConfString + 'ns:Subsystems/ns:FileTypeAssociations', $ns).Enabled
     
-        Foreach($Item in  $fta.Extension){
+      Foreach ($Item in  $fta.Extension) 
+      {
+        if ($null -ne $Item.FileTypeAssociation.FileExtension.Name) 
+        {
           $sk = "" | Select-Object -Property Name, ProcID
           $sk.Name = $Item.FileTypeAssociation.FileExtension.Name
           $sk.ProcID = $Item.FileTypeAssociation.FileExtension.ProgId
@@ -65,13 +68,16 @@
           $result = $AppxInfo.FileTypeAssociation.add($sk) 
         }
       }
+    }
   
       #URL Protokoll
       $url = $Base.SelectNodes($ConfString+'ns:Subsystems/ns:URLProtocols/ns:Extensions',$ns)
      
       if($url.Count -gt 0){
         $AppxInfo.HasURLProtocols = $true
-      } else {
+      } 
+      else 
+      {
         $AppxInfo.HasURLProtocols = $false
       }
   
@@ -93,11 +99,13 @@
       #Objects
       $objects = $Base.SelectNodes($ConfString+'ns:Subsystems/ns:Objects',$ns)
      
-      if($objects.Count -gt 0){
+      if($objects.Count -gt 0)
+      {
  
         $AppxInfo.ObjectsEnabled = "true" -eq $objects.Enabled
     
-      } else {
+      } else 
+      {
 
         $AppxInfo.ObjectsEnabled = "NotDefined"
       }
