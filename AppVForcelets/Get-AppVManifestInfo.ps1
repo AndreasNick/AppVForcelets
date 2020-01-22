@@ -19,11 +19,10 @@
         https://www.software-virtualisierung.de
     #>
     
-    [CmdletBinding()]
     [Alias()]
     [OutputType('AppxManifestInfo')]
     param( 
-      [Parameter( Position=0, Mandatory=$true, ValueFromPipeline=$true)] [System.IO.FileInfo] $Path
+      [Parameter( Position=0, Mandatory, ValueFromPipeline)] [System.IO.FileInfo] $Path
     )
 
     Process
@@ -112,7 +111,7 @@
       ServicesEnabled, HasServices, Services, RegistryEnabled, FileSystemEnabled, FontsEnabled, SoftwareClientsEnabled".replace("`n", "").replace("`r", "").replace(" ", "").split(','))
       
       $AppxInfo = New-Object PSCustomObject
-      $InfoObj | ForEach-Object {$AppxInfo | add-member –membertype NoteProperty –name $_ -Value $null }
+      $InfoObj | ForEach-Object {$AppxInfo | add-member -membertype NoteProperty -name $_ -Value $null }
               
                
       $AppxInfo.MaxfilePath = $maxfileName
@@ -140,7 +139,7 @@
       $AppxInfo.PackageFullLoad = $false
       if(($null -ne $appvStreamMapp.StreamMap.FeatureBlock) -and ($appvStreamMapp.StreamMap.FeatureBlock.Id.Contains("PrimaryFeatureBlock"))){
         $AppxInfo.HasFB1 = $true
-        foreach($block in $appvStreamMapp.StreamMap.FeatureBlock){
+        foreach($block in $appvStreamMapp.StreamMap.FeatureBlock){                             #Hier ist ein Fehler!
           if($appvStreamMapp.StreamMap.FeatureBlock.GetAttribute("LoadAll") -eq $true){
             $AppxInfo.PackageFullLoad = $true
           }
@@ -413,8 +412,8 @@
 # SIG # Begin signature block
 # MIIetQYJKoZIhvcNAQcCoIIepjCCHqICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUno9SUtph2Ic7qGFvLpQ3Sh+H
-# Qpugghm/MIIEhDCCA2ygAwIBAgIQQhrylAmEGR9SCkvGJCanSzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+//kSs2T87ZiJ8KRZlRlT12Z
+# PQugghm/MIIEhDCCA2ygAwIBAgIQQhrylAmEGR9SCkvGJCanSzANBgkqhkiG9w0B
 # AQUFADBvMQswCQYDVQQGEwJTRTEUMBIGA1UEChMLQWRkVHJ1c3QgQUIxJjAkBgNV
 # BAsTHUFkZFRydXN0IEV4dGVybmFsIFRUUCBOZXR3b3JrMSIwIAYDVQQDExlBZGRU
 # cnVzdCBFeHRlcm5hbCBDQSBSb290MB4XDTA1MDYwNzA4MDkxMFoXDTIwMDUzMDEw
@@ -557,22 +556,22 @@
 # U0EgQ29kZSBTaWduaW5nIENBAhEAjaZk0i7s1Jgixb2rI0fOxzAJBgUrDgMCGgUA
 # oHgwGAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYB
 # BAGCNwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0B
-# CQQxFgQUczX7UW+w920ToTlUUn5XPVpnREAwDQYJKoZIhvcNAQEBBQAEggEAQ40k
-# t89SlvOY706oH57hrok4s4/HsMdmMZ+t7mL2Uvzpen/SB7v1GDV/lffyntp75bjZ
-# PQ8jIEkYNMD+AwgjtkkIaW87ddlL3/aeq9APhrHs/mBYKAeiI2g3LoDPu4aDKxtA
-# SBccPWMoJwyDvmF+c8AV5ewRsSewSiC2qx7/Jvqy5HGz4ZlVKtKK/wCysFIuAops
-# IZHByUvO6KKppZaDjiDuDF+h/B/sR/GoS/T9w+S26uStWRnWog9HCSsefPSGrrxO
-# MUgN7LGr6eE0hBg6KRVC8FQxAjlJ46I5dNF2KB5ewkQcQuy7vDuCqzPY7UtSeDLS
-# gxjZv1HrLEwgYnQWgKGCAigwggIkBgkqhkiG9w0BCQYxggIVMIICEQIBATCBjjB6
+# CQQxFgQUBIm+RPQTFpTUhHyBCPQOphClMS4wDQYJKoZIhvcNAQEBBQAEggEAL0DR
+# YGWTFs0hrEJgY5+6fpjKB4aps49qJ0U8BO93O7RBPJ2wA63iF0nbM89HSYIFTw/4
+# NQ6qF5pHnysh9iCSxWrLnsjRU0vncVmEY9FdESUgp33ZdmH9CTZKPU4qVHmiUw3x
+# T/KlOGD+D3WJeZpthJPO65bRGW6QV9Pxpew6QH3336GrmQ4KpDO9ilyR4mg0myno
+# 0yMRvfj2uJLR49cgsqjGRpzt9KSzvAQE/F08p3+FGqShyATpUa8u1ngrlBBiH+vK
+# n5OQca4fnXS/FnDzp69Qc/2P84BPa4bP9WdUROEjf4afuxgXZPllOOet8NyrtPTL
+# inFkCVq2cp/0X+XNzaGCAigwggIkBgkqhkiG9w0BCQYxggIVMIICEQIBATCBjjB6
 # MQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYD
 # VQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDEgMB4GA1UE
 # AxMXQ09NT0RPIFRpbWUgU3RhbXBpbmcgQ0ECECtz23RjEUxaWzJK8jBXckkwCQYF
 # Kw4DAhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkF
-# MQ8XDTIwMDExMTE2MDQyMlowIwYJKoZIhvcNAQkEMRYEFAPEN96KS0QOyCHafwpm
-# OshPb1mnMA0GCSqGSIb3DQEBAQUABIIBADhTtNsSun0pKqXJ3RqIdOLvOnCKmXGu
-# QTQyxnRXA9svw526y++Slhwxyj7Rm6DyoPwliaRpPV4ZCme64AB/5UyJzwNwRPqA
-# zQjvMOT75cNjzva0ROvw+a9cOW9JLRDCD27v5sEIE3nnaAb4w2wdSvs05dRE56LC
-# g0Kq4qNIQZyXOQahDthynWCKdEVdjhwMY+bXXvUFtPDJ25kB6PpVuTB1vdI7t+kZ
-# 6uKz4wRcVEKQlkHSusl6Qw3BlDxEv9dduGnWzqoXne68zSBSGYwafzg/s8ENQqJU
-# urYuVhKbnjgDzxxLTe7MDY4RnnqU+WuI2FAu3pokL9NkHcKhMrfEsd4=
+# MQ8XDTIwMDExNjE1NTQwMFowIwYJKoZIhvcNAQkEMRYEFFcV5tfjLtmKPX6hD1uG
+# T7JP3BB2MA0GCSqGSIb3DQEBAQUABIIBABJdoACBS3QVflAL0Y7rJ+Ut4PVCaCl0
+# /NL7Iq8bwPNoiJdPsoPFKkviDEfaDhrlIwRY4MHzIAyBOD9Hcln9nHl/P+Z1aLXn
+# 467xKwz5rYQTlYqAR5FgKekR4Z9+KFDFiv0Lv8D9cf3eyvYVFSbESuKLNusf/Jk8
+# BPyzsLBMnaIsn+iUAbRWMDzdSpzTGPndUCqjFk+DBwZu7yKKkj833BV4w1y7E1N3
+# COAeVriFofY3lM/9VJmrFyrsljbo1/60k2phHucuP2D/tPwI/YZEtv6zSP2OLQlm
+# FxQuXJlK1BQ1yNbO8caVICOBSayBNlZ+iavFJMPrLLeaO5MvSDj6yv8=
 # SIG # End signature block

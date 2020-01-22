@@ -1,30 +1,34 @@
-﻿function Get-AppVIconsFromPackage {
+﻿function Save-AppVIcons {
   <#
 .SYNOPSIS
-Short description
+saves the icons (or Images) to Disk
 
 .DESCRIPTION
 Long description
 
 .PARAMETER Path
-Parameter description
+Parameter to the source .appv file
 
 .PARAMETER Iconlist
   Get pscustomObjects from Get-AppV<>info 
-  {@{Icon=[{Windows}]\Installer\{AC76BA86-7AD7-1031-7B44-AA1000000001}\SC_Reader.ico; Target=[{AppVPackageRoot}]\Reader\AcroRd32.exe}, 
+ {@{Icon=[{Windows}]\Installer\{AC76BA86-7AD7-1031-7B44-AA1000000001}\SC_Reader.ico; Target=[{AppVPackageRoot}]\Reader\AcroRd32.exe}, 
   @{Icon=[{Windows}]\Installer\{AC76BA86-7AD7-1031-7B44-AA1000000001}\SC_Reader.ico; Target=[{AppVPackageRoot}]\Reader\AcroRd32.exe}} 
 
 .PARAMETER Type
- type to return
+ 'Bmp', 'Emf', 'Gif',  'Jpeg', 'Png', 'Tiff', 'Wmf','ico'
+
+ .PARAMETER DestinationPath
+ Output Path
 
 .EXAMPLE
-  $IconList = Get-AppVManifestInfo  C:\temp\test\PowerDirector12-Spezial.appv | Select-Object -Property Shortcuts
+ $IconList = Get-AppVManifestInfo  C:\temp\test\PowerDirector12-Spezial.appv | Select-Object -Property Shortcuts
   Get-AppVIconsFromPackage -Path C:\temp\test\PowerDirector12-Spezial.appv -Iconlist $IconList
 
 .NOTES
  https://www.software-virtualisierung.de
  Andreas Nick, 2019/2020
 #>
+
   [CmdletBinding()]
   [Alias()]
   [OutputType('AppVIconObject')]
@@ -35,6 +39,7 @@ Parameter description
    
     [Parameter( Position = 1, Mandatory = $true, ValueFromPipelineByPropertyName=$True)] [Alias('Shortcuts')]
     [PSCustomObject[]]  $Iconlist, #from the Shortcut Info
+    [Parameter( Position = 1, Mandatory = $true, ValueFromPipelineByPropertyName=$True)] $DestinationPath,
     [ValidateSet('Bmp', 'Emf', 'Gif',  'Jpeg', 'Png', 'Tiff', 'Wmf','ico')][string] $ImageType = "Png"
   )
 
@@ -45,12 +50,13 @@ Parameter description
       if (Test-Path $Path.FullName) {
         [System.IO.Compression.zipArchive] $arc = [System.IO.Compression.ZipFile]::OpenRead($Path.FullName)
          
+        $Counter = 1
         foreach ($icon in @($Iconlist)) {
           $ix = $null
           if ($icon.Icon -ne "") { #Sometimes there is no icon :-(
             $iPath = "Root/" + $(Convert-AppVVFSPath (Convert-AppVPath  $icon.Icon)).Replace('\', '/')
             $iPath = [uri]::EscapeUriString($iPath ) 
-            Write-Verbose "Extract from package path : $iPath" 
+            Write-Verbose "Extract from package path : $iPath" -Verbose
             [System.IO.Compression.ZipArchiveEntry] $ix = $arc.GetEntry($iPath) 
           }
           Else {
@@ -62,17 +68,22 @@ Parameter description
           if($null -eq $ix ) #Not Found ! Get default Icon
           {
             Write-Verbose "Image not fond in the archiv! Is the file deletet? User default yoda.icon $iPath" 
-            $iconBase64 = Get-DefaultImage -ImageType $ImageType
+            if($ImageType -ne 'ico')
+            {
+              $iconBase64 = Get-DefaultImage -ImageType $ImageType
+            } else 
+            {
+              #$iconBase64 = Get-DefaultImage -ImageType 'png'
+              write-verbose $("No Icon found in $iPath cannot safe") 
+            }
+
           } else {
           
             [System.IO.binaryreader] $appvfile = $ix.Open()
             [byte[]] $bytes = Get-ReadAllBytes -reader $appvfile
             
             write-verbose $("Extract icon file " + $icon.Icon + " with " + $bytes.count + " bytes") 
-            #$b = [Convert]::FromBase64String($iconBase64 )
-            #$b | Add-Content -Encoding Byte -Path C:\Users\Andreas\Desktop\text.ico
-            #We convert all to a little bitmap. Need an other solutions for hight resultion pictures!
-            #sorry, we need a file for this
+
             $bytes | Set-Content -Encoding byte  -Path "$env:temp\tempicofile.ico" -Force
             #
             write-verbose $("Convert it to a Base64 encoded image") 
@@ -80,18 +91,22 @@ Parameter description
             $bmp=$null
             
             [System.Drawing.Image] $bmp = ([System.Drawing.Icon]::ExtractAssociatedIcon("$env:temp\tempicofile.ico")).ToBitmap() #round about 5K
-
             $ms = new-object System.IO.MemoryStream
+
             #$imageType = [System.Drawing.Imaging.ImageFormat]::Icon #it won't work
-            if($ImageType -eq 'ico'){
+           if($ImageType -eq 'ico'){
                Get-BitmapAsIconStream -SourceBitmap $bmp -Fs $ms
             } else {
               $bmp.save($ms, [System.Drawing.Imaging.ImageFormat]::$ImageType)
             }
+            $f1 = New-Object System.IO.FileStream ($DestinationPath -replace '\.',"_$Counter."),'Append','Write' 
 
-            $iconBase64 = [Convert]::ToBase64String($ms.GetBuffer())
+            $f1.Write($ms.GetBuffer(), 0, $ms.Length);
+            $Counter++
+
             $ms.Dispose()
             $appvfile.Dispose()
+            $f1.Dispose()
           }
             
           $AppvIconInfo = "" | Select-Object -Property  Target, Base64Image, ImageType, Icon, File, Arguments
@@ -128,8 +143,8 @@ Parameter description
 # SIG # Begin signature block
 # MIIetQYJKoZIhvcNAQcCoIIepjCCHqICAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUjulY5wfVrVBpPH+xI3GTg0Bf
-# dROgghm/MIIEhDCCA2ygAwIBAgIQQhrylAmEGR9SCkvGJCanSzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUPYhAieaWmWs6zNzg3SOYqTJW
+# XHygghm/MIIEhDCCA2ygAwIBAgIQQhrylAmEGR9SCkvGJCanSzANBgkqhkiG9w0B
 # AQUFADBvMQswCQYDVQQGEwJTRTEUMBIGA1UEChMLQWRkVHJ1c3QgQUIxJjAkBgNV
 # BAsTHUFkZFRydXN0IEV4dGVybmFsIFRUUCBOZXR3b3JrMSIwIAYDVQQDExlBZGRU
 # cnVzdCBFeHRlcm5hbCBDQSBSb290MB4XDTA1MDYwNzA4MDkxMFoXDTIwMDUzMDEw
@@ -272,22 +287,22 @@ Parameter description
 # U0EgQ29kZSBTaWduaW5nIENBAhEAjaZk0i7s1Jgixb2rI0fOxzAJBgUrDgMCGgUA
 # oHgwGAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYB
 # BAGCNwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0B
-# CQQxFgQUvoxmY3YGDNRsnHI3E3hlxPF2YeIwDQYJKoZIhvcNAQEBBQAEggEApAMb
-# DkVOoahKANAfspmAVt1z/ikZzQw7KMtTBS58s9X3viZVMQwdqrIueSGiyVB7lUBr
-# +Q7Dhj93e6QmcGkscuAl60BmEsIK51uhLbMEzVEodKHjOBf3Dh8RSPEUoYULtHUk
-# 8KccRrCeFKrc+7zxpI9JM9Q0XmwGK7VjQ50Ty3H/UCcmkwTafsJK29ejV/If2zFV
-# lTTzJGa9kUBl8dRjaT71yMcK2nwmn44/Kh9wE15uIXFu70QP+BRhaW/5GGoCSPke
-# S7oQjJZ5hnx4Q0iraYN3y8XNnNIWfiL2PyqtMisDWQDHSxMqvHqXG6O2bFNG7Zuh
-# Boaj2L/ajh/IvixIZaGCAigwggIkBgkqhkiG9w0BCQYxggIVMIICEQIBATCBjjB6
+# CQQxFgQU50G/WTdwdrjnM1dQj13VB166ln8wDQYJKoZIhvcNAQEBBQAEggEAogIu
+# LXkErbGUxTgfL+/HGH+z7wUf+ZkdtcJhWVZdOBH1dd+xW3QH0Vhj3tbfaT2jq3PW
+# cDNlkIVvXddCYJ9vWfK65jwd2x/aHapzry+cC0bwqEgzqf55hP7WQaSnKfgoFxVR
+# DH7WpRtu/RSu841ZETVa4oxpT+67ABABBRMzwQtZjsoMAMPIosW9cBz3BCdBR8fH
+# 1Kbw7Fs6OO/6bIluYjPMISougNAV/4aJHvnvFytl6eM/zEXBp7Q3bp4j1s/H5bvY
+# Oei0N5OtoHzB/flivoKS+sR4d9PhjAi2tAHQEcJGeSivgNmiv5NNhA6pWtHohzWv
+# HO9dQHza9SpBqAnRY6GCAigwggIkBgkqhkiG9w0BCQYxggIVMIICEQIBATCBjjB6
 # MQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYD
 # VQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDEgMB4GA1UE
 # AxMXQ09NT0RPIFRpbWUgU3RhbXBpbmcgQ0ECECtz23RjEUxaWzJK8jBXckkwCQYF
 # Kw4DAhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkF
-# MQ8XDTIwMDExNjE1NTM1N1owIwYJKoZIhvcNAQkEMRYEFCf7/B5aKT/gT4U6Pc0T
-# dTJs3bQeMA0GCSqGSIb3DQEBAQUABIIBALS5BJ7AW0N+SfP+BrgGZj6AQNYipxgJ
-# nEQ0nPDR8sZfo7B6gpP4ittcnlkZKiu5zZvqE9jmv+78JGOKPIRuvLxqhWvY4pOU
-# rSKhXEWRJjirQnqIaXNYeQCoJoxrwTt6cN2AuCCxWp0ZqhKEvrpG+uAmYPV7AKHJ
-# T6EmqNxD2jCdsdlNm/h++tOOnBnwTnhzdlTFe/QgvKblwEbQD835SX6+m9EOwij/
-# x0DnwoYICkoov10rnzPwCa7/QrFrEuzV5Xu/If5V1JsTcrp04Vw1qNWYTL8Z93yc
-# MmiT7c3WmqlibKaB9IR8ArDPIF08CoCAI2nYId3nqVdb1k3dq3UzUhM=
+# MQ8XDTIwMDExNjE1NTQyNFowIwYJKoZIhvcNAQkEMRYEFO6leHxiQVT1qY2HywI8
+# 5p2J8V+nMA0GCSqGSIb3DQEBAQUABIIBACx1RUDszfIWvPIROD8wNnSAACf6bGb7
+# qf1NsV8IeOrmniZ+mQx9IqFAHPl1XrEIv6m7jmh/r8DAGBtnNzh+s20L4RD3xpMD
+# UreBjGGp8asWBqwXfSOq5J7EUUyzH/qJPh/d5zpFPtsEtvdSr5HBUD4OExZb/QK1
+# Lsfif/XzW7pDbuMm/yKCiWZRm3NFuOfV/UPgjLOu1cPCx7k9OLXN7ND6s8V2IRe/
+# BNuxnWTJ4L+0p09u+6h/dbJGxKEY2nkSIyL6/gEPlA1d9qvdEUtdoC1KUEeTu1p9
+# YSAjEOQI3tzJdtHM/ZjuBOVgZn1QXmOG8g+lKfSSAQ6TW2vhFge2fVw=
 # SIG # End signature block

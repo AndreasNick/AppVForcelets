@@ -3,13 +3,15 @@
     # This module allow to analyse yout App-V Depot
 #>
 
-
-
 Import-Module $PSScriptRoot\..\AppVForcelets -force
 $Depot = "C:\AppVPakete"
 
-Get-AppVManifestInfo  "C:\temp\test\PowerDirector12-Spezial.appv" | Get-AppVIconsFromPackage  
 
+#Get-AppVManifestInfo  "C:\temp\test\PowerDirector12-Spezial.appv" | % {Save-AppVIcons -Path $_.ConfigPath -Iconlist $_.Shortcuts -ImageType ico -DestinationPath $("$env:USERPROFILE\desktop\out\" + $_.name + ".ico")}
+
+#Get All icons ans save
+Get-ChildItem "$Depot\*.appv" -Recurse | Get-AppVManifestInfo  | ForEach-Object `
+ {Save-AppVIcons -Path $_.ConfigPath -Iconlist $_.Shortcuts -ImageType ico -DestinationPath $("$env:USERPROFILE\desktop\out\" + $_.name + ".ico") -Verbose} 
 
 
 break
