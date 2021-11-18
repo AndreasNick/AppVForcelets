@@ -6,10 +6,15 @@
 Import-Module $PSScriptRoot\..\AppVForcelets -force
 $Depot = "C:\AppVPakete"
 
-
+break
 #Get-AppVManifestInfo  "C:\temp\test\PowerDirector12-Spezial.appv" | % {Save-AppVIcons -Path $_.ConfigPath -Iconlist $_.Shortcuts -ImageType ico -DestinationPath $("$env:USERPROFILE\desktop\out\" + $_.name + ".ico")}
 
 #Get All icons ans save
+# First create Directory
+if(-not (Test-Path $("$env:USERPROFILE\desktop\out\"))) {
+  New-Item $("$env:USERPROFILE\desktop\out\") -ItemType Directory  
+}
+
 Get-ChildItem "$Depot\*.appv" -Recurse | Get-AppVManifestInfo  | ForEach-Object `
  {Save-AppVIcons -Path $_.ConfigPath -Iconlist $_.Shortcuts -ImageType ico -DestinationPath $("$env:USERPROFILE\desktop\out\" + $_.name + ".ico") -Verbose} 
 
@@ -85,13 +90,15 @@ gci "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Select-Object -Property Na
 #Find Visual Assemblies in your Packages
 Get-ChildItem "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | ? {$_.FileTypeAssociation} | Select-Object -Property Name, FileTypeAssociation
 
-gci "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Select-Object -Property Name, HasShellExtensions, HasServices
+Get-ChildItem "$Depot\*.appv" -Recurse | Get-AppVManifestInfo |Where-Object {$_.HasServices}|  Select-Object -Property Name, HasShellExtensions, HasServices
 
 gci "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Select-Object -Property Name,HasSxSAssemblys, SxSAssemblys | % { $_.SxSAssemblys } | Select-Object -Unique | Sort-Object
 
 gci "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Select-Object -Property Name,SxSAssemblys | ? { $_.SxSAssemblys } | Select-Object -Property Name, SxSAssemblys 
 
-gci "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Select-Object -Property Name,SxSAssemblys | % { $_.SxSAssemblys } | Select-Object -Unique | Sort-Object
+Get-ChildItem "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Where-Object {$_.HasSxSAssemblys } | Select-Object -Property Name,SxSAssemblys 
+
+Get-ChildItem "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Select-Object -Property Name,SxSAssemblys | % { $_.SxSAssemblys } | Select-Object -Unique | Sort-Object
   
 <#
       Microsoft.MSXML2
@@ -123,4 +130,7 @@ gci "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Select-Object -Property Na
 break
 
 
+Get-ChildItem "$Depot\*deploymentConfig.xml" -Recurse | Get-AppVDeploymentConfigInfo | Where-Object {$_.HasUserScripts -or $_.HasMachineScripts } | Select-Object -Property Name,ConfigPath 
+
+Get-ChildItem "$Depot\*.appv" -Recurse | Get-AppVManifestInfo | Select-Object -Property Name, MaxfileSize, MaxfilePath | Sort-Object -Property MaxfileSize -Descending
 
