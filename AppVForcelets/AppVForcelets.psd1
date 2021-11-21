@@ -45,7 +45,7 @@ Copyright = '(c) 2020 Andreas. All rights reserved'
 Description = 'AppVForcelets'
 
 # Minimum PowerShell Version Required
-PowerShellVersion = '4.0'
+PowerShellVersion = '5.0'
 
 # Name of Required PowerShell Host
 PowerShellHostName = ''

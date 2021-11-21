@@ -1,0 +1,2 @@
+IconLib source: https://www.codeproject.com/Articles/16178/IconLib-Icons-Unfolded-MultiIcon-and-Windows-Vista
+This article, along with any associated source code and files, is licensed under The Creative Commons Attribution-ShareAlike 2.5 License

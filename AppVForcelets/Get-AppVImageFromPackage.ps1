@@ -1,116 +1,192 @@
-﻿function Get-AppVImageFromPackage {
+﻿
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression
+Import-Module $PSScriptRoot\Lib\IconLib.dll
+
+
+function Get-AppVImageFromPackage {
   <#
-.SYNOPSIS
-Short description
+      .SYNOPSIS
+      Short description
 
-.DESCRIPTION
-Long description
+      .DESCRIPTION
+      Long description
 
-.PARAMETER Path
-Parameter description
+      .PARAMETER Path
+      Parameter description
 
-.PARAMETER Iconlist
-  Get pscustomObjects from Get-AppV<>info 
-  {@{Icon=[{Windows}]\Installer\{AC76BA86-7AD7-1031-7B44-AA1000000001}\SC_Reader.ico; Target=[{AppVPackageRoot}]\Reader\AcroRd32.exe}, 
-  @{Icon=[{Windows}]\Installer\{AC76BA86-7AD7-1031-7B44-AA1000000001}\SC_Reader.ico; Target=[{AppVPackageRoot}]\Reader\AcroRd32.exe}} 
+      .PARAMETER Iconlist
+      Get pscustomObjects from Get-AppV<>info 
+      {@{Icon=[{Windows}]\Installer\{AC76BA86-7AD7-1031-7B44-AA1000000001}\SC_Reader.ico; Target=[{AppVPackageRoot}]\Reader\AcroRd32.exe}, 
+      @{Icon=[{Windows}]\Installer\{AC76BA86-7AD7-1031-7B44-AA1000000001}\SC_Reader.ico; Target=[{AppVPackageRoot}]\Reader\AcroRd32.exe}} 
 
-.PARAMETER Type
- type to return
+      .PARAMETER Type  
+      Image type: bmp, jpg etc.
 
-.EXAMPLE
-  $IconList = Get-AppVManifestInfo  C:\temp\test\PowerDirector12-Spezial.appv | Select-Object -Property Shortcuts
-  Get-AppVIconsFromPackage -Path C:\temp\test\PowerDirector12-Spezial.appv -Iconlist $IconList
+      .PARAMETER ImageResolutions
+      ImageResolutions
 
-.NOTES
- https://www.software-virtualisierung.de
- Andreas Nick, 2019/2020
-#>
+      .EXAMPLE
+      $IconList = Get-AppVManifestInfo  C:\temp\test\PowerDirector12-Spezial.appv | Select-Object -Property Shortcuts
+      Get-AppVImageFromPackage -Path C:\temp\test\PowerDirector12-Spezial.appv -Iconlist $IconList
+
+      .NOTES
+      https://www.software-virtualisierung.de
+      Andreas Nick, 2021
+  #>
+  
+  
   [CmdletBinding()]
   [Alias()]
   [OutputType('AppVIconObject')]
   param( 
    
-    [Parameter( Position = 0, Mandatory = $true, ValueFromPipelineByPropertyName=$True)] 
+    [Parameter( Position = 0, Mandatory = $true, ValueFromPipelineByPropertyName = $True)] 
     [Alias('ConfigPath')] [System.IO.FileInfo] $Path,
    
-    [Parameter( Position = 1, Mandatory = $true, ValueFromPipelineByPropertyName=$True)] [Alias('Shortcuts')]
-    [PSCustomObject[]]  $Iconlist, #from the Shortcut Info
-    [ValidateSet('Bmp', 'Emf', 'Gif',  'Jpeg', 'Png', 'Tiff', 'Wmf','ico')][string] $ImageType = "Png"
+    [Parameter( Position = 1, Mandatory = $false, ValueFromPipelineByPropertyName = $True)] [Alias('Shortcuts')]
+    [PSCustomObject[]]  $Iconlist = $null, #from the Shortcut Info
+    
+    #NOT SUPPORTED, we set a format only on weiting a Bitmap!
+    [ValidateSet('Bmp', 'Emf', 'Gif', 'Jpeg', 'Png', 'Tiff', 'Wmf', 'ico')][string] $ImageType = "Png", 
+    
+    [ValidateSet(16, 32, 48, 64, 72, 128)][string] $ImageResolutions = 32
   )
 
+
   Process {
+    
+    #
+    # Achtung, bei leerer Liste! Cannot bind argument to parameter 'Iconlist' because it is an empty arra
+    #
+    
+    
+    if($null -eq $Iconlist ){
+      Write-Verbose "WARNING: Empty icon list, null result"
+      Return $null
+    }
+     
     $resultlist = @()
     try {
       $ResultList = new-Object System.Collections.ArrayList
       if (Test-Path $Path.FullName) {
         [System.IO.Compression.zipArchive] $arc = [System.IO.Compression.ZipFile]::OpenRead($Path.FullName)
-         
         foreach ($icon in @($Iconlist)) {
+
           $ix = $null
-          if ($icon.Icon -ne "") { #Sometimes there is no icon :-(
+    
+          if ($icon.Icon -ne "") {
+            #Sometimes there is no icon :-(
             $iPath = "Root/" + $(Convert-AppVVFSPath (Convert-AppVPath  $icon.Icon)).Replace('\', '/')
             $iPath = [uri]::EscapeUriString($iPath ) 
-            Write-Verbose "Extract from package path : $iPath" 
+            Write-Verbose "Extract from AppV Package path path : $iPath"
             [System.IO.Compression.ZipArchiveEntry] $ix = $arc.GetEntry($iPath) 
           }
-          Else {
-            Write-Verbose "Target $($icon.Targer) has no icon!" 
+
+          if ($null -eq $ix ) { #Not Found ! Get default Icon
+            Write-Verbose "WARNING: Image for $($icon.Target) not fond in the archiv! Is the file deletet? Use default yoda.icon $iPath"
           }
+          else {
+            try {
+              $name = $ix.Name
+              $multiIcon = New-Object System.Drawing.IconLib.MultiIcon 
+              [System.IO.binaryreader] $appvfile = $ix.Open()
 
-          $iconBase64 = $null
-          
-          if($null -eq $ix ) #Not Found ! Get default Icon
-          {
-            Write-Verbose "Image not fond in the archiv! Is the file deletet? User default yoda.icon $iPath" 
-            $iconBase64 = Get-DefaultImage -ImageType $ImageType
-          } else {
-          
-            [System.IO.binaryreader] $appvfile = $ix.Open()
-            [byte[]] $bytes = Get-ReadAllBytes -reader $appvfile
-            
-            write-verbose $("Extract icon file " + $icon.Icon + " with " + $bytes.count + " bytes") 
-            #$b = [Convert]::FromBase64String($iconBase64 )
-            #$b | Add-Content -Encoding Byte -Path C:\Users\Andreas\Desktop\text.ico
-            #We convert all to a little bitmap. Need an other solutions for hight resultion pictures!
-            #sorry, we need a file for this
-            $bytes | Set-Content -Encoding byte  -Path "$env:temp\tempicofile.ico" -Force
-            #
-            write-verbose $("Convert it to a Base64 encoded image") 
-            #
-            $bmp=$null
-            
-            [System.Drawing.Image] $bmp = ([System.Drawing.Icon]::ExtractAssociatedIcon("$env:temp\tempicofile.ico")).ToBitmap() #round about 5K
+              # Muss das so sein?    
+              # Den Stream direkt übergeben funktioniert leider nicht
+              #
 
-            $ms = new-object System.IO.MemoryStream
-            #$imageType = [System.Drawing.Imaging.ImageFormat]::Icon #it won't work
-            if($ImageType -eq 'ico'){
-               Get-BitmapAsIconStream -SourceBitmap $bmp -Fs $ms
-            } else {
-              $bmp.save($ms, [System.Drawing.Imaging.ImageFormat]::$ImageType)
+              $bufferSize = 4096
+              $ms = New-object System.IO.MemoryStream
+              $buffer = new-Object byte[] $bufferSize
+              $count = 0
+              do {
+                $count = $appvfile.Read($buffer, 0, $buffer.Length)
+                If ($count -gt 0) { 
+                  $ms.Write($buffer, 0, $count)
+                }
+              } While ($count -ne 0)
+              #$buffer = $null
+        
+        
+              $multiIcon = New-Object System.Drawing.IconLib.MultiIcon
+              $multiIcon.Load($ms)
+              $ms.Close()
+              $ms.Dispose()
+              $appvfile.Close()
+        
+              $found = $false
+              [System.Drawing.Bitmap] $bm = $null #Bitmap Image
+
+              foreach ($iconImage in $multiIcon[0]) {
+          
+                if ($iconImage.Size.Width -eq $ImageResolutions) {
+                  $bm = $iconImage.Icon.ToBitmap()
+                  $found = $true
+                }
+              }
+
+              if (-not $found) {
+                Write-Verbose "INFO: No $($ImageResolutions)x$($ImageResolutions) Image found for $name search for a new max"
+
+                #Find Max
+                $max = 0
+                $sindex = -1
+                        
+                for ($index = 0; $index -lt $multiIcon[0].Count; $index++) {
+                  if ($multiIcon[0][$index].size.width -ge $max) {
+                    $max = $multiIcon[0][$index].size.width
+                    $sindex = $index 
+                  }
+                }
+                $bm = New-Object System.Drawing.Bitmap ($multiIcon[0][$sindex].Icon.ToBitmap(), (New-Object System.Drawing.Size($ImageResolutions, $ImageResolutions) ))
+                Write-Verbose "INFO: Found $($max)x$($max) Image for $name - we resize the result image"
+              }
+
+              #Speicher im Block behalten!
+                            
+
+                            
+        
+              $AppvIconInfo = "" | Select-Object -Property  Target, Image, ImageType, Icon, File, Arguments
+              $AppvIconInfo.Image = $bm
+              $AppvIconInfo.Target = $icon.Target
+              $AppvIconInfo.Icon = $icon.Icon
+              $AppvIconInfo.ImageType = $null # $ImageType
+              $AppvIconInfo.File = $icon.File
+              $AppvIconInfo.Arguments = $icon.Arguments
+              $null = $resultlist.add($AppvIconInfo)
+          
+    
+            } catch [System.UnauthorizedAccessException] {
+              [Management.Automation.ErrorRecord]$e = $_
+
+              $info = [PSCustomObject]@{
+                Exception = $e.Exception.Message
+                Reason    = $e.CategoryInfo.Reason
+                Target    = $e.CategoryInfo.TargetName
+                Script    = $e.InvocationInfo.ScriptName
+                Line      = $e.InvocationInfo.ScriptLineNumber
+                Column    = $e.InvocationInfo.OffsetInLine
+              }
+
             }
 
-            $image = $ms.GetBuffer()
-            $ms.Dispose()
-            $appvfile.Dispose()
-          }
-            
-          $AppvIconInfo = "" | Select-Object -Property  Target, Image, ImageType, Icon, File, Arguments
-          $AppvIconInfo.Base64Image = $image
-          $AppvIconInfo.Target = $icon.Target
-          $AppvIconInfo.Icon = $icon.Icon
-          $AppvIconInfo.ImageType = $ImageType
-          $AppvIconInfo.File = $icon.File
-          $AppvIconInfo.Arguments = $icon.Arguments
-          $null = $resultlist.add($AppvIconInfo)
-        }
-          
-      }
+                        
+          } #else
+
+        } #Foreach
+                    
+        return $resultlist
+                    
+      } #Test-Path for App-V File
       else {
-        Write-Verbose "AppV file not found" 
+        Write-Verbose "ERRORAppV file not found" 
         throw [System.IO.FileNotFoundException] "$Path not found."
       }
-    }
-    catch [System.UnauthorizedAccessException] {
+
+    } catch [System.UnauthorizedAccessException] 
+    {
       [Management.Automation.ErrorRecord]$e = $_
 
       $info = [PSCustomObject]@{
@@ -121,125 +197,8 @@ Parameter description
         Line      = $e.InvocationInfo.ScriptLineNumber
         Column    = $e.InvocationInfo.OffsetInLine
       }
+
     }
-    return $resultlist
-  }
-}
-# SIG # Begin signature block
-# MIIVrgYJKoZIhvcNAQcCoIIVnzCCFZsCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
-# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU3w71EYSfGX3KV8GEf8PNyROb
-# 8fmgghHmMIIFgTCCBGmgAwIBAgIQOXJEOvkit1HX02wQ3TE1lTANBgkqhkiG9w0B
-# AQwFADB7MQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVy
-# MRAwDgYDVQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEh
-# MB8GA1UEAwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTE5MDMxMjAwMDAw
-# MFoXDTI4MTIzMTIzNTk1OVowgYgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpOZXcg
-# SmVyc2V5MRQwEgYDVQQHEwtKZXJzZXkgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJU
-# UlVTVCBOZXR3b3JrMS4wLAYDVQQDEyVVU0VSVHJ1c3QgUlNBIENlcnRpZmljYXRp
-# b24gQXV0aG9yaXR5MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAgBJl
-# FzYOw9sIs9CsVw127c0n00ytUINh4qogTQktZAnczomfzD2p7PbPwdzx07HWezco
-# EStH2jnGvDoZtF+mvX2do2NCtnbyqTsrkfjib9DsFiCQCT7i6HTJGLSR1GJk23+j
-# BvGIGGqQIjy8/hPwhxR79uQfjtTkUcYRZ0YIUcuGFFQ/vDP+fmyc/xadGL1RjjWm
-# p2bIcmfbIWax1Jt4A8BQOujM8Ny8nkz+rwWWNR9XWrf/zvk9tyy29lTdyOcSOk2u
-# TIq3XJq0tyA9yn8iNK5+O2hmAUTnAU5GU5szYPeUvlM3kHND8zLDU+/bqv50TmnH
-# a4xgk97Exwzf4TKuzJM7UXiVZ4vuPVb+DNBpDxsP8yUmazNt925H+nND5X4OpWax
-# KXwyhGNVicQNwZNUMBkTrNN9N6frXTpsNVzbQdcS2qlJC9/YgIoJk2KOtWbPJYjN
-# hLixP6Q5D9kCnusSTJV882sFqV4Wg8y4Z+LoE53MW4LTTLPtW//e5XOsIzstAL81
-# VXQJSdhJWBp/kjbmUZIO8yZ9HE0XvMnsQybQv0FfQKlERPSZ51eHnlAfV1SoPv10
-# Yy+xUGUJ5lhCLkMaTLTwJUdZ+gQek9QmRkpQgbLevni3/GcV4clXhB4PY9bpYrrW
-# X1Uu6lzGKAgEJTm4Diup8kyXHAc/DVL17e8vgg8CAwEAAaOB8jCB7zAfBgNVHSME
-# GDAWgBSgEQojPpbxB+zirynvgqV/0DCktDAdBgNVHQ4EFgQUU3m/WqorSs9UgOHY
-# m8Cd8rIDZsswDgYDVR0PAQH/BAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wEQYDVR0g
-# BAowCDAGBgRVHSAAMEMGA1UdHwQ8MDowOKA2oDSGMmh0dHA6Ly9jcmwuY29tb2Rv
-# Y2EuY29tL0FBQUNlcnRpZmljYXRlU2VydmljZXMuY3JsMDQGCCsGAQUFBwEBBCgw
-# JjAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuY29tb2RvY2EuY29tMA0GCSqGSIb3
-# DQEBDAUAA4IBAQAYh1HcdCE9nIrgJ7cz0C7M7PDmy14R3iJvm3WOnnL+5Nb+qh+c
-# li3vA0p+rvSNb3I8QzvAP+u431yqqcau8vzY7qN7Q/aGNnwU4M309z/+3ri0ivCR
-# lv79Q2R+/czSAaF9ffgZGclCKxO/WIu6pKJmBHaIkU4MiRTOok3JMrO66BQavHHx
-# W/BBC5gACiIDEOUMsfnNkjcZ7Tvx5Dq2+UUTJnWvu6rvP3t3O9LEApE9GQDTF1w5
-# 2z97GA1FzZOFli9d31kWTz9RvdVFGD/tSo7oBmF0Ixa1DVBzJ0RHfxBdiSprhTEU
-# xOipakyAvGp4z7h/jnZymQyd/teRCBaho1+VMIIF9TCCA92gAwIBAgIQHaJIMG+b
-# JhjQguCWfTPTajANBgkqhkiG9w0BAQwFADCBiDELMAkGA1UEBhMCVVMxEzARBgNV
-# BAgTCk5ldyBKZXJzZXkxFDASBgNVBAcTC0plcnNleSBDaXR5MR4wHAYDVQQKExVU
-# aGUgVVNFUlRSVVNUIE5ldHdvcmsxLjAsBgNVBAMTJVVTRVJUcnVzdCBSU0EgQ2Vy
-# dGlmaWNhdGlvbiBBdXRob3JpdHkwHhcNMTgxMTAyMDAwMDAwWhcNMzAxMjMxMjM1
-# OTU5WjB8MQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVy
-# MRAwDgYDVQQHEwdTYWxmb3JkMRgwFgYDVQQKEw9TZWN0aWdvIExpbWl0ZWQxJDAi
-# BgNVBAMTG1NlY3RpZ28gUlNBIENvZGUgU2lnbmluZyBDQTCCASIwDQYJKoZIhvcN
-# AQEBBQADggEPADCCAQoCggEBAIYijTKFehifSfCWL2MIHi3cfJ8Uz+MmtiVmKUCG
-# VEZ0MWLFEO2yhyemmcuVMMBW9aR1xqkOUGKlUZEQauBLYq798PgYrKf/7i4zIPoM
-# GYmobHutAMNhodxpZW0fbieW15dRhqb0J+V8aouVHltg1X7XFpKcAC9o95ftanK+
-# ODtj3o+/bkxBXRIgCFnoOc2P0tbPBrRXBbZOoT5Xax+YvMRi1hsLjcdmG0qfnYHE
-# ckC14l/vC0X/o84Xpi1VsLewvFRqnbyNVlPG8Lp5UEks9wO5/i9lNfIi6iwHr0bZ
-# +UYc3Ix8cSjz/qfGFN1VkW6KEQ3fBiSVfQ+noXw62oY1YdMCAwEAAaOCAWQwggFg
-# MB8GA1UdIwQYMBaAFFN5v1qqK0rPVIDh2JvAnfKyA2bLMB0GA1UdDgQWBBQO4Tqo
-# Uzox1Yq+wbutZxoDha00DjAOBgNVHQ8BAf8EBAMCAYYwEgYDVR0TAQH/BAgwBgEB
-# /wIBADAdBgNVHSUEFjAUBggrBgEFBQcDAwYIKwYBBQUHAwgwEQYDVR0gBAowCDAG
-# BgRVHSAAMFAGA1UdHwRJMEcwRaBDoEGGP2h0dHA6Ly9jcmwudXNlcnRydXN0LmNv
-# bS9VU0VSVHJ1c3RSU0FDZXJ0aWZpY2F0aW9uQXV0aG9yaXR5LmNybDB2BggrBgEF
-# BQcBAQRqMGgwPwYIKwYBBQUHMAKGM2h0dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9V
-# U0VSVHJ1c3RSU0FBZGRUcnVzdENBLmNydDAlBggrBgEFBQcwAYYZaHR0cDovL29j
-# c3AudXNlcnRydXN0LmNvbTANBgkqhkiG9w0BAQwFAAOCAgEATWNQ7Uc0SmGk295q
-# Koyb8QAAHh1iezrXMsL2s+Bjs/thAIiaG20QBwRPvrjqiXgi6w9G7PNGXkBGiRL0
-# C3danCpBOvzW9Ovn9xWVM8Ohgyi33i/klPeFM4MtSkBIv5rCT0qxjyT0s4E307dk
-# sKYjalloUkJf/wTr4XRleQj1qZPea3FAmZa6ePG5yOLDCBaxq2NayBWAbXReSnV+
-# pbjDbLXP30p5h1zHQE1jNfYw08+1Cg4LBH+gS667o6XQhACTPlNdNKUANWlsvp8g
-# JRANGftQkGG+OY96jk32nw4e/gdREmaDJhlIlc5KycF/8zoFm/lv34h/wCOe0h5D
-# ekUxwZxNqfBZslkZ6GqNKQQCd3xLS81wvjqyVVp4Pry7bwMQJXcVNIr5NsxDkuS6
-# T/FikyglVyn7URnHoSVAaoRXxrKdsbwcCtp8Z359LukoTBh+xHsxQXGaSynsCz1X
-# UNLK3f2eBVHlRHjdAd6xdZgNVCT98E7j4viDvXK6yz067vBeF5Jobchh+abxKgoL
-# pbn0nu6YMgWFnuv5gynTxix9vTp3Los3QqBqgu07SqqUEKThDfgXxbZaeTMYkuO1
-# dfih6Y4KJR7kHvGfWocj/5+kUZ77OYARzdu1xKeogG/lU9Tg46LC0lsa+jImLWpX
-# cBw8pFguo/NbSwfcMlnzh6cabVgwggZkMIIFTKADAgECAhAOWThJHf2EAGPmiQKS
-# aTawMA0GCSqGSIb3DQEBCwUAMHwxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
-# dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
-# Z28gTGltaXRlZDEkMCIGA1UEAxMbU2VjdGlnbyBSU0EgQ29kZSBTaWduaW5nIENB
-# MB4XDTIwMDgxNzAwMDAwMFoXDTIzMDgxNzIzNTk1OVowga0xCzAJBgNVBAYTAkRF
-# MQ4wDAYDVQQRDAUzMDUzOTEWMBQGA1UECAwNTmllZGVyc2FjaHNlbjERMA8GA1UE
-# BwwISGFubm92ZXIxEzARBgNVBAkMCkRyaWJ1c2NoIDIxJjAkBgNVBAoMHU5pY2sg
-# SW5mb3JtYXRpb25zdGVjaG5payBHbWJIMSYwJAYDVQQDDB1OaWNrIEluZm9ybWF0
-# aW9uc3RlY2huaWsgR21iSDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIB
-# ANperdsEZyxEKnjFFen+7kV+EfL5NpZUz6Yl4YhkpYYPRHf7z9yBWGvc0cjVlcB4
-# Zr9AhqcVPns5EqUjT7TCOJxuGjScN+6vTt1KOxrgOjMlvoUztKrKbOsGsdhL5OhU
-# ANOZ2vwOvc0lQM1cMCQsW//iVnsu1noYiC1ju42tTD9yciIiSIC3kfL1mJKBFzW3
-# Y0t7tdNyIES5RtmE0KeqaHJBtbA3sbubY1BB/TxTWVTXNjr2HuvsbNuyTUd84C3H
-# Hgoed7hrSWv07fZvvDF51Nnn/wZrRU2wtHE/HJfZ+btgctI5PQsxmInBoxPTgL5i
-# MuKzfU6Vk04vymc3a6ABXuXfUSUB5OcPZCnan5V8Qa0nK2l+KCD3aW+ZqvZax+F0
-# I/ij1MFxtqFgLqKaebOlri8R9Wv3hOhkfGoDD+DNizhQDeznJDQES3c1Bu6FgKl7
-# LRdVfaM/qwSq6s817gbOcPGuOe4zkue4vBzrzvKfPceptxtCIgNF/3fQxSick1Gn
-# tuhPCzW8i7OFUoDK4PY6jdZtP3tjb3oJQym0Fjs0p1g1BMLU4d31FD+KGeNOO37n
-# 8KzVPPm0FZf5zSd/3NeRRZy0fI4ZCJvJMJQguSrMeTjxfLFnTR5m6Na0SBUBLsXd
-# ozdWvwhZdxJNt4tYkPLUZUQLR7oSFXOR25ZWm7Wdf8GlAgMBAAGjggGuMIIBqjAf
-# BgNVHSMEGDAWgBQO4TqoUzox1Yq+wbutZxoDha00DjAdBgNVHQ4EFgQUq0Q7xQIR
-# CzrWxe5EAkrwXkJJi9owDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwEwYD
-# VR0lBAwwCgYIKwYBBQUHAwMwEQYJYIZIAYb4QgEBBAQDAgQQMEoGA1UdIARDMEEw
-# NQYMKwYBBAGyMQECAQMCMCUwIwYIKwYBBQUHAgEWF2h0dHBzOi8vc2VjdGlnby5j
-# b20vQ1BTMAgGBmeBDAEEATBDBgNVHR8EPDA6MDigNqA0hjJodHRwOi8vY3JsLnNl
-# Y3RpZ28uY29tL1NlY3RpZ29SU0FDb2RlU2lnbmluZ0NBLmNybDBzBggrBgEFBQcB
-# AQRnMGUwPgYIKwYBBQUHMAKGMmh0dHA6Ly9jcnQuc2VjdGlnby5jb20vU2VjdGln
-# b1JTQUNvZGVTaWduaW5nQ0EuY3J0MCMGCCsGAQUFBzABhhdodHRwOi8vb2NzcC5z
-# ZWN0aWdvLmNvbTAcBgNVHREEFTATgRFhLm5pY2tAbmljay1pdC5kZTANBgkqhkiG
-# 9w0BAQsFAAOCAQEAC6KzO/xsS5EkS5KLY873pwHamFGMpOzIEHeoAiqpX7LMy8Gu
-# 41Rznsou/ZQGjYS9HpgezYk4kk5AoNGY/+ObcnSIvNFOr7EkYwZt+uTejdzgbY8g
-# hDmhdm3XpfjqO+DjJe6xtf8Qfies7bnXhcKvNFTvycIPjikVvxF/tbfFzx9iRqzO
-# XCgznnMR2e+VbK6vjZJeMgR0KaHRmXOfXt/jX7cJt1j0TateKpECeFxawKA8fmle
-# ZBw2KVXEI+0lDmuxk4oRRkLdH0nUv06mqicgsfwUFbCkU26tgGJemGdmtf5VcVM9
-# 03K/4xJkkhuOlwMA1e9XU/is0kSk/KW1G9msvDGCAzIwggMuAgEBMIGQMHwxCzAJ
-# BgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcT
-# B1NhbGZvcmQxGDAWBgNVBAoTD1NlY3RpZ28gTGltaXRlZDEkMCIGA1UEAxMbU2Vj
-# dGlnbyBSU0EgQ29kZSBTaWduaW5nIENBAhAOWThJHf2EAGPmiQKSaTawMAkGBSsO
-# AwIaBQCgeDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJAzEM
-# BgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMCMGCSqG
-# SIb3DQEJBDEWBBTHlQsebAxJkZHj/W3iEFEWHN1lHTANBgkqhkiG9w0BAQEFAASC
-# AgBls54sPvxW3uj5W9MxDUMNsQ2/mQ97cOb2YLTeQYSiKCgfB0dJ4gSBIFN3X/yV
-# M95IJ0NJzyzcd3rDgvWGRA7e/T9OopdiW8OgDuZFAaQSM6ilRGwQeglE7rnMw5hF
-# uMoooke3FUEHhfE1C+f9VgtZjqmr8krEVbVe4Z3uvRfE7zHdcKCPWv/FI3XCWPlG
-# JjSxvv1cCQE/wD+e0JtMGw2DuCQL7XzK80SWhsyr4Ox1KgzVAycKAKrqVoqTOf8q
-# QsXhkXJUcYWaSu1eWuXscT7edYB9+VZO3Qz7fqaXqiIB/7S+EIbbsbRjYSfiay//
-# WMUmk2e3yFihLo5vF5flECvAlaXtePSgZqNT+sPFH6JRXZgt043bwSzr795zaufV
-# tNBEyrf99epfnv/X/6WsXSp2aqY/G82FUa/oyH+AOBTMcQB4wVJSa5Olk7cqKzgp
-# sqI9+QDONrW4SFXY6pfVLc9H96tBhV/HlDlG5KUZp6Hw6xJmmHsk8gFk3d0N3o8z
-# gT06IvltCyuBNlAQPWeW7FodibFXwpNWxbB94Yb1zyiowQk34I4K6B9oTIvQWIPY
-# CgKSz8u6bbevMieGgfsXE3oU/XlZWmFcumrhT+BXEbxtwmp45K9cnpF4ZdOYKw1D
-# e4FkyFapHr+rWPEemyGIMJorhlBauuS8DLxYiGy0sYM06w==
-# SIG # End signature block
+  } #Process
+
+} #Function
